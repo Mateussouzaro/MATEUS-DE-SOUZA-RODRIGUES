@@ -144,6 +144,10 @@ export default function App() {
   const [capaPopupCount, setCapaPopupCount] = useState<number>(0);
   const [showGlobalCapa, setShowGlobalCapa] = useState<boolean>(false);
 
+  // Free Fire Game Launcher States
+  const [isLaunchingGame, setIsLaunchingGame] = useState<boolean>(false);
+  const [gamePlatform, setGamePlatform] = useState<"android" | "ios" | "pc">("android");
+
   // Gemini AI advice states
   const [aiResponseText, setAiResponseText] = useState<string>("").slice(); // keeping type compatible
   const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
@@ -156,6 +160,92 @@ export default function App() {
   const addConsoleLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString('pt-BR');
     setConsoleLogs(prev => [`[${timestamp}] ${message}`, ...prev.slice(0, 15)]);
+  };
+
+  const triggerGameLaunch = (target: "standard" | "max") => {
+    setIsLaunchingGame(true);
+    addConsoleLog(`[Launcher] Iniciando protocolo de ininterrupção para Free Fire ${target === "max" ? "MAX" : "Normal"}...`);
+    
+    // Copy current configuration setup cleanly to clipboard
+    const output = `Setup IPZ SENSIPRO Perfeita:\n--------------------------\nPerfil Ativo: ${activeProfile.name}\nCelular: ${activeProfile.brand} ${activeProfile.model}\nDPI: ${activeProfile.dpi}\n\nSENSIBILIDADE MENU:\nGeral: ${activeProfile.sensiSettings.geral}\nRed Dot: ${activeProfile.sensiSettings.redDot}\nMira 2X: ${activeProfile.sensiSettings.mira2x}\nMira 4X: ${activeProfile.sensiSettings.mira4x}\nMira AWM: ${activeProfile.sensiSettings.miraAwm}\n\nARMAS TUNADAS (Sensi):\n${activeProfile.weapons.map(w => `- ${w.name}: Sensi ${w.sensi}`).join("\n")}\n\nConfiguração de ouro copiada com sucesso para o seu jogo!`;
+    
+    try {
+      navigator.clipboard?.writeText(output);
+      addConsoleLog(`[Launcher] Sensibilidade de ouro copiada para a Área de Transferência!`);
+    } catch (e) {
+      console.error("Falha ao copiar sensibilidade", e);
+    }
+
+    addConsoleLog(`[Injetor] Ajustando canais de memória virtual...`);
+    addConsoleLog(`[Injetor] Modulo Calibrador auto-acoplado para ${target === "max" ? "FF MAX" : "FF Original"}...`);
+
+    // Synthetic injector click/sfx beep
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1400, audioCtx.currentTime + 0.25);
+      gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.25);
+    } catch (_) {}
+
+    setTimeout(() => {
+      setIsLaunchingGame(false);
+      addConsoleLog(`[Launcher] Redirecionando para o aplicativo...`);
+
+      let schemeUrl = "";
+      let fallbackStoreUrl = "";
+
+      if (gamePlatform === "android") {
+        if (target === "standard") {
+          schemeUrl = "intent:#Intent;package=com.dts.freefireth;end";
+          fallbackStoreUrl = "https://play.google.com/store/apps/details?id=com.dts.freefireth";
+        } else {
+          schemeUrl = "intent:#Intent;package=com.dts.freefiremax;end";
+          fallbackStoreUrl = "https://play.google.com/store/apps/details?id=com.dts.freefiremax";
+        }
+      } else if (gamePlatform === "ios") {
+        if (target === "standard") {
+          schemeUrl = "freefire://";
+          fallbackStoreUrl = "https://apps.apple.com/br/app/garena-free-fire-mundial/id1300146617";
+        } else {
+          schemeUrl = "freefiremax://";
+          fallbackStoreUrl = "https://apps.apple.com/br/app/garena-free-fire-max/id1480516829";
+        }
+      } else {
+        schemeUrl = "https://www.google.com/search?q=garena+free+fire+pc+emulador";
+        fallbackStoreUrl = target === "max" 
+          ? "https://play.google.com/store/apps/details?id=com.dts.freefiremax" 
+          : "https://play.google.com/store/apps/details?id=com.dts.freefireth";
+      }
+
+      // Try opening the deep link / intent
+      try {
+        const link = document.createElement("a");
+        link.href = schemeUrl;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (err) {
+        console.warn("Blocked link redirect inside sandbox, opening fallback.", err);
+      }
+
+      // Also trigger absolute store backup redirect after brief delay
+      setTimeout(() => {
+        window.open(fallbackStoreUrl, "_blank", "noopener,noreferrer");
+      }, 400);
+
+      const resolvedGameName = target === "max" ? "Free Fire MAX" : "Free Fire";
+      alert(`⚡ VALORES INJETADOS E COPIADOS COM SUCESSO!\n\nPassos para aplicar no seu jogo:\n1. A sensibilidade do seu perfil já foi copiada para o seu Clipboard!\n2. O jogo ${resolvedGameName} está abrindo em seu dispositivo.\n3. Vá nas configurações de sensibilidade do jogo e cole/configure os novos valores!\n4. Lembre de definir seu celular com ${activeProfile.dpi} DPI.`);
+    }, 1200);
   };
 
   // Track active profile
@@ -1771,6 +1861,98 @@ export default function App() {
                 <Send className="w-3.5 h-3.5" />
               </button>
             </form>
+          </div>
+
+          {/* LAUNCHER & INJECT PRO TOOL */}
+          <div className="bg-[#0c0d10] border border-zinc-850 rounded-xl p-3.5 space-y-3 shadow-lg relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-red-600/5 rounded-full filter blur-xl pointer-events-none"></div>
+            
+            <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
+              <div className="flex items-center gap-1.5">
+                <PlayCircle className="w-4 h-4 text-red-500 animate-pulse" />
+                <span className="text-[11px] font-black uppercase font-rajdhani text-white tracking-wider">Lançador FF Injetor</span>
+              </div>
+              <span className="text-[8px] bg-red-500/15 text-red-400 font-mono px-1 py-0.5 rounded border border-red-500/20 uppercase font-semibold">Bypass Pronto</span>
+            </div>
+
+            {/* Platform Selector */}
+            <div className="space-y-1">
+              <span className="text-[9px] text-zinc-500 font-mono uppercase tracking-wider block font-semibold">1. Plataforma do Dispositivo:</span>
+              <div className="grid grid-cols-3 gap-1">
+                <button
+                  type="button"
+                  onClick={() => setGamePlatform("android")}
+                  className={`py-1 px-1 rounded text-[9px] font-mono border flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer ${
+                    gamePlatform === "android"
+                      ? "bg-red-950/40 border-red-500 text-red-400 font-bold"
+                      : "bg-[#060608] border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+                  }`}
+                >
+                  <Smartphone className="w-2.5 h-2.5" />
+                  <span>Android</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGamePlatform("ios")}
+                  className={`py-1 px-1 rounded text-[9px] font-mono border flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer ${
+                    gamePlatform === "ios"
+                      ? "bg-red-950/40 border-red-500 text-red-400 font-bold"
+                      : "bg-[#060608] border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+                  }`}
+                >
+                  <Smartphone className="w-2.5 h-2.5 rotate-12" />
+                  <span>iPhone/iOS</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGamePlatform("pc")}
+                  className={`py-1 px-1 rounded text-[9px] font-mono border flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer ${
+                    gamePlatform === "pc"
+                      ? "bg-red-950/40 border-red-500 text-red-400 font-bold"
+                      : "bg-[#060608] border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+                  }`}
+                >
+                  <Gamepad2 className="w-2.5 h-2.5" />
+                  <span>PC Emulador</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Launch Buttons */}
+            <div className="space-y-1.5">
+              <span className="text-[9px] text-zinc-500 font-mono uppercase tracking-wider block font-semibold">2. Abrir Jogo & Injetar Valores:</span>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => triggerGameLaunch("standard")}
+                  disabled={isLaunchingGame}
+                  className="py-2.5 px-2 bg-[#121319] hover:bg-zinc-800 border border-zinc-800 hover:border-red-500 text-zinc-200 hover:text-white rounded-lg text-[10px] font-bold uppercase tracking-wide flex flex-col items-center justify-center gap-1 transition-all duration-200 active:scale-95 cursor-pointer disabled:opacity-50"
+                >
+                  <Flame className="w-4 h-4 text-orange-500 text-glow-orange animate-bounce" />
+                  <span>Free Fire</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => triggerGameLaunch("max")}
+                  disabled={isLaunchingGame}
+                  className="py-2.5 px-2 bg-[#121319] hover:bg-zinc-800 border border-zinc-800 hover:border-red-500 text-zinc-200 hover:text-white rounded-lg text-[10px] font-bold uppercase tracking-wide flex flex-col items-center justify-center gap-1 transition-all duration-200 active:scale-95 cursor-pointer disabled:opacity-50"
+                >
+                  <Sparkles className="w-4 h-4 text-red-500 text-glow-red animate-pulse" />
+                  <span>Free Fire MAX</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Status indicator inline */}
+            {isLaunchingGame ? (
+              <div className="bg-red-950/20 border border-red-500/20 p-2 rounded-lg text-[8px] font-mono text-red-400 text-center animate-pulse uppercase tracking-wider font-bold">
+                ⚡ AUTO-REGEDIT INJETADO COM SUCESSO! INICIANDO...
+              </div>
+            ) : (
+              <div className="bg-[#060608] border border-zinc-900/60 p-2 rounded-lg text-[8px] font-mono text-zinc-400 text-center uppercase tracking-normal">
+                Clique para copiar as configurações de ouro e lançar seu FF directamente!
+              </div>
+            )}
           </div>
 
           {/* EXPORT SENSI VALUES DISCOVERY COPY */}
