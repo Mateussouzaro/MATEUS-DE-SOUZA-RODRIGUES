@@ -1930,6 +1930,7 @@ export default function App() {
                 >
                   <Flame className="w-4 h-4 text-orange-500 text-glow-orange animate-bounce" />
                   <span>Free Fire</span>
+                  <span className="text-[8px] text-zinc-500 font-mono font-normal normal-case block mt-0.5">com.dts.freefireth</span>
                 </button>
                 <button
                   type="button"
@@ -1939,6 +1940,7 @@ export default function App() {
                 >
                   <Sparkles className="w-4 h-4 text-red-500 text-glow-red animate-pulse" />
                   <span>Free Fire MAX</span>
+                  <span className="text-[8px] text-zinc-500 font-mono font-normal normal-case block mt-0.5">com.dts.freefiremax</span>
                 </button>
               </div>
             </div>
